@@ -1,22 +1,36 @@
-#Portfolio
-This is my portfolio for getting into college.
-##Features
-- Music .pdf and .mp3s, each made with Musescore 4.6.2
-- Multiple HTML pages to view in your brower
-- Example: ![Screenshot](images/demo.png)
+# Portfolio
+
+This is my portfolio for getting into college. It includes original music, interactive web pages, and other digital work.
+
+## Features
+
+- Music files in **.pdf** and **.mp3** formats, each made with MuseScore 4.6.2  
+- Multiple **HTML pages** to view in your browser  
+- Example screenshot:  
+  ![Screenshot](images/demo.png)
+
 ## How to Run
+
 1. Clone the repository  
-   `git clone https://github.com/yourname/project`
+   ```bash
+   git clone https://github.com/yourname/project
+   ```
 2. Open `index.html` in your browser  
 3. Enjoy!
+
 ## Built With
-- HTML / CSS / JavaScript
-- Scratch
-- Musescore 4.6.2
-- VS Code
+
+- HTML / CSS / JavaScript  
+- Scratch  
+- MuseScore 4.6.2  
+- VS Code  
+
 ## Project Structure
+
+```txt
 .
 ├── tips/
 ├── visualizer/
 ├── images/
 └── README.md
+```
