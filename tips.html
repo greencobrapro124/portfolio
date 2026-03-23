@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Budget</title>
+
+<style>
+:root {
+    --light-bg: #f8f9fa;
+    --light-text: #333;
+    --link: #377;
+}
+
+body {
+    font-family: system-ui, sans-serif;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    padding: 2rem;
+    background: var(--light-bg);
+    color: var(--light-text);
+}
+
+aside {
+    width: 350px;
+}
+
+main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-container {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    margin-bottom: 20px;
+}
+
+svg {
+    transform: rotate(-90deg);
+    border-radius: 50%;
+}
+
+.donut-ring {
+    fill: none;
+    stroke: #e9ecef;
+    stroke-width: 6;
+}
+
+.donut-segment {
+    fill: none;
+    stroke-width: 6;
+    stroke-linecap: round;
+    transition: stroke-dasharray 0.5s ease;
+    cursor: pointer;
+}
+
+.donut-segment:hover {
+    stroke-width: 6.39;
+}
+
+.chart-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.total-val {
+    font-size: 2.5rem;
+    font-weight: 800;
+    display: block;
+    line-height: 1;
+}
+
+.total-label {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: #6c757d;
+    letter-spacing: 1px;
+}
+
+.legend {
+    margin-top: 1rem;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    width: 100%;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+}
+
+.legend-color {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+}
+
+.inputs {
+    margin-top: 2rem;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.inputs div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.7rem;
+}
+
+input {
+    width: 60px;
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+a:link, a:visited, a:active {
+    color: var(--link);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+table {
+    border-collapse: collapse;
+    margin: 0px;
+}
+
+th, td {
+    border: 1px solid #ccc;
+    padding: 2px;
+    text-align: center;
+}
+
+th {
+    background-color: #f2f2f2;
+}
+/* Scrollable container */
+#table-container {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 400px;
+    border: 1px solid #ccc;
+    padding: 5px;
+    background: white;
+}
+
+/* Fade-in animation */
+#table-container table {
+    animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* Sticky headers */
+#table-container th {
+    position: sticky;
+    background: #f2f2f2;
+    z-index: 2;
+}
+
+#table-container th:first-child {
+    left: 0;
+    z-index: 3;
+}
+
+#table-container thead th {
+    top: 0;
+}
+
+/* Hover highlight */
+#table-container td:hover,
+#table-container th:hover {
+    background: #ffeaa7;
+}
+
+#table-container tr:hover td {
+    background: #fdffcd;
+}
+
+#table-container tr:hover th {
+    background: #ffeaa7;
+}
+
+
+</style>
+</head>
+
+<body>
+
+<aside>
+    <h2>Budget</h2>
+
+    <div class="chart-container">
+        <svg width="100%" height="100%" viewBox="0 0 40 40">
+            <circle class="donut-ring" cx="20" cy="20" r="15.915"></circle>
+            <g id="segment-group"></g>
+        </svg>
+
+        <div class="chart-center">
+            <span class="total-val" id="total-value">0</span>
+            <span class="total-label">Total</span>
+        </div>
+    </div>
+
+    <div class="legend" id="chart-legend"></div>
+
+    <div class="inputs" id="input-group">
+        <div><label>Church</label><input type="number" value="4" id="church" min="0"></div>
+        <div><label>Save</label><input type="number" value="3" id="save" min="0"></div>
+        <div><label>Spend</label><input type="number" value="0" id="spend" min="0"></div>
+        <div><label>Bank</label><input type="number" value="3" id="bank" min="0"></div>
+    </div>
+
+    <p>With ten dollars coming in every week from the allowance tracker, I have 40% going to church, 30% going to my saving wallet, and 30% going to the bank.</p>
+
+    <h2>Recently Viewed</h2>
+    <ul id="recent"></ul>
+
+    <h2>Interactive Multiplication Table</h2>
+
+    <!-- NEW SIZE INPUT -->
+    <label for="table-size">Size:</label>
+    <input type="number" id="table-size" value="10" min="1" max="30">
+    <button onclick="generateTableFromInput()">Generate</button>
+
+    <div id="table-container" width="100%" height="500px"></div>
+
+</aside>
+
+<main>
+    <h1>Articles</h1>
+
+    <article id="at-1">
+        <h2>Pythagoran Theorem</h2>
+        <cite cite="https://www.ixl.com/math/lessons/the-pythagorean-theorem">
+            This article is taken from IXL. You can view it
+            <a href="https://www.ixl.com/math/lessons/the-pythagorean-theorem">here</a>.
+        </cite>
+
+        <p>The <strong>Pythagorean theorem</strong> describes a special relationship between the sides of a right triange.</p>
+
+        <p>A right triangle is made up of two <strong>legs</strong> and a <strong>hypotenuse</strong>. The legs meet at a 90° angle. The hypotenuse is the side opposite the right angle. The hypotenuse is always the longest side. We use <strong><em>a</em></strong> and <strong><em>b</em></strong> to represent the lengths of the legs, and <strong><em>c</em></strong> to represent the length of the hypotenuse.</p>
+
+        <img width="200px" src="Portfolio/tri1.png">
+        <img width="200px" src="Portfolio/tri2.png">
+
+        <p>According to the Pythagorean theorem, the square of the hypotenuse is equal to the sum of the squares of the legs.</p>
+
+        <math>
+            <mrow>
+                <msup><mi>a</mi><mn>2</mn></msup>
+                <mo>+</mo>
+                <msup><mi>b</mi><mn>2</mn></msup>
+                <mo>=</mo>
+                <msup><mi>c</mi><mn>2</mn></msup>
+            </mrow>
+        </math>
+
+        <img src="Portfolio/triex.png" width="350px">
+    </article>
+
+    <article id="at-2">
+        <header>
+            <h2>How to Calculate the Area of an n-Sided Polygon</h2>
+            <p>Whether you're working with a perfect hexagon or a complex, irregular shape, here is how to find the area of any polygon.</p>
+        </header>
+
+        <section>
+            <h3>1. Regular Polygons</h3>
+            <p>A polygon is <strong>regular</strong> if all its sides and interior angles are equal.</p>
+
+            <math display="block">
+                <mi>Area</mi>
+                <mo>=</mo>
+                <mfrac>
+                    <mrow><mi>n</mi><mo>×</mo><msup><mi>s</mi><mn>2</mn></msup></mrow>
+                    <mrow><mn>4</mn><mo>×</mo><mi>tan</mi><mfenced><mfrac><mn>180</mn><mi>n</mi></mfrac></mfenced></mrow>
+                </mfrac>
+            </math>
+
+            <h4>Common Shortcut Formulas</h4>
+            <ul>
+                <li><strong>Equilateral Triangle:</strong> Area = (√3 / 4) × s²</li>
+                <li><strong>Square:</strong> Area = s²</li>
+                <li><strong>Regular Hexagon:</strong> Area = (3√3 / 2) × s²</li>
+            </ul>
+        </section>
+
+        <section>
+            <h3>2. Using the Apothem</h3>
+            <p>If you know the <strong>apothem (a)</strong>—the distance from the center to the midpoint of any side—the formula becomes much simpler:</p>
+            <p><em>Area = ½ × Perimeter × Apothem</em></p>
+        </section>
+
+        <section>
+            <h3>3. Irregular Polygons (Shoelace Formula)</h3>
+            <p>If the sides are of different lengths, the most accurate method is the <strong>Shoelace Formula</strong>.</p>
+        </section>
+    </article>
+    <article id="at-3">
+  <header>
+    <h2>Volume of an n‑Sided Regular Polyhedron</h2>
+    <p>How to compute the volume of 3D solids built from a regular n‑sided polygon.</p>
+  </header>
+
+  <section>
+    <h3>1. Area of a Regular n‑Sided Polygon</h3>
+    <p>
+      Any regular polygon with <strong>n</strong> sides of length <strong>s</strong> has area:
+    </p>
+
+    <math display="block">
+      <mrow>
+        <mi>Area</mi>
+        <mo>=</mo>
+        <mfrac>
+          <mrow><mi>n</mi><mo>×</mo><msup><mi>s</mi><mn>2</mn></msup></mrow>
+          <mrow><mn>4</mn><mo>×</mo><mi>tan</mi><mfenced><mfrac><mi>π</mi><mi>n</mi></mfrac></mfenced></mrow>
+        </mfrac>
+      </mrow>
+    </math>
+
+    <p>This formula comes from dividing the polygon into <em>n</em> congruent isosceles triangles.</p>
+  </section>
+
+  <section>
+    <h3>2. Volume of a Prism with an n‑Sided Base</h3>
+    <p>
+      A prism with height <strong>h</strong> and a regular n‑gon base has volume:
+    </p>
+
+    <math display="block">
+      <mrow>
+        <mi>V</mi><mo>=</mo>
+        <mi>Area</mi><mo>×</mo><mi>h</mi>
+      </mrow>
+    </math>
+
+    <p>
+      Substituting the polygon area:
+    </p>
+
+    <math display="block">
+      <mrow>
+        <mi>V</mi><mo>=</mo>
+        <mfrac>
+          <mrow><mi>n</mi><mo>×</mo><msup><mi>s</mi><mn>2</mn></msup><mo>×</mo><mi>h</mi></mrow>
+          <mrow><mn>4</mn><mo>×</mo><mi>tan</mi><mfenced><mfrac><mi>π</mi><mi>n</mi></mfrac></mfenced></mrow>
+        </mfrac>
+      </mrow>
+    </math>
+  </section>
+
+  <section>
+    <h3>3. Volume of a Pyramid with an n‑Sided Base</h3>
+    <p>
+      A pyramid with the same base and height <strong>h</strong> has volume:
+    </p>
+
+    <math display="block">
+      <mrow>
+        <mi>V</mi><mo>=</mo>
+        <mfrac>
+          <mrow><mn>1</mn></mrow>
+          <mrow><mn>3</mn></mrow>
+        </mfrac>
+        <mo>×</mo>
+        <mi>Area</mi>
+        <mo>×</mo>
+        <mi>h</mi>
+      </mrow>
+    </math>
+
+    <p>This works for any regular n‑gon base.</p>
+  </section>
+
+  <section>
+    <h3>4. What About “Regular Polyhedra”?</h3>
+    <p>
+      In strict geometry, only five <strong>Platonic solids</strong> are truly “regular polyhedra.”
+      They correspond to specific values of <em>n</em>:
+    </p>
+
+    <ul>
+      <li>n = 3 → Tetrahedron, Octahedron, Icosahedron</li>
+      <li>n = 4 → Cube</li>
+      <li>n = 5 → Dodecahedron</li>
+    </ul>
+
+    <p>
+      For general <strong>n</strong>, the most natural 3D solids are prisms and pyramids built
+      from a regular n‑gon base — and their volumes always come from:
+    </p>
+
+    <p><strong>Volume = (Area of base) × (height)</strong></p>
+  </section>
+</article>
+<article id="at-4">
+  <header>
+    <h2>Surface Area of an n‑Sided Regular Polyhedron</h2>
+    <p>How to compute the surface area of 3D solids built from a regular n‑sided polygon.</p>
+  </header>
+
+  <section>
+    <h3>1. Perimeter and Area of a Regular n‑Sided Polygon</h3>
+    <p>
+      A regular polygon with <strong>n</strong> sides of length <strong>s</strong> has:
+    </p>
+
+    <ul>
+      <li><strong>Perimeter:</strong> P = n × s</li>
+      <li><strong>Area:</strong></li>
+    </ul>
+
+    <math display="block">
+      <mrow>
+        <mi>Area</mi>
+        <mo>=</mo>
+        <mfrac>
+          <mrow><mi>n</mi><mo>×</mo><msup><mi>s</mi><mn>2</mn></msup></mrow>
+          <mrow><mn>4</mn><mo>×</mo><mi>tan</mi><mfenced><mfrac><mi>π</mi><mi>n</mi></mfrac></mfenced></mrow>
+        </mfrac>
+      </mrow>
+    </math>
+
+    <p>This polygon will be the base of the 3D solid.</p>
+  </section>
+
+  <section>
+    <h3>2. Surface Area of a Prism with an n‑Sided Base</h3>
+    <p>
+      A prism has two identical n‑sided bases and <strong>n rectangular faces</strong>.
+    </p>
+
+    <p><strong>Total Surface Area:</strong></p>
+
+    <math display="block">
+      <mrow>
+        <mi>SA</mi>
+        <mo>=</mo>
+        <mn>2</mn><mo>×</mo><mi>Area</mi>
+        <mo>+</mo>
+        <mi>Perimeter</mi><mo>×</mo><mi>h</mi>
+      </mrow>
+    </math>
+
+    <p>
+      The term <em>Perimeter × h</em> represents the combined area of all the rectangular side faces.
+    </p>
+  </section>
+
+  <section>
+    <h3>3. Surface Area of a Pyramid with an n‑Sided Base</h3>
+    <p>
+      A pyramid has one n‑sided base and <strong>n triangular faces</strong>.
+    </p>
+
+    <p><strong>Total Surface Area:</strong></p>
+
+    <math display="block">
+      <mrow>
+        <mi>SA</mi>
+        <mo>=</mo>
+        <mi>Area</mi>
+        <mo>+</mo>
+        <mi>Lateral</mi><mo>&nbsp;</mo><mi>Area</mi>
+      </mrow>
+    </math>
+
+    <p>
+      Each triangular face has area:
+    </p>
+
+    <math display="block">
+      <mrow>
+        <mfrac>
+          <mrow><mi>s</mi><mo>×</mo><mi>ℓ</mi></mrow>
+          <mn>2</mn>
+        </mfrac>
+      </mrow>
+    </math>
+
+    <p>
+      where <strong>ℓ</strong> is the slant height.  
+      Since there are <strong>n</strong> triangles:
+    </p>
+
+    <math display="block">
+      <mrow>
+        <mi>Lateral</mi><mo>&nbsp;</mo><mi>Area</mi>
+        <mo>=</mo>
+        <mfrac>
+          <mrow><mi>n</mi><mo>×</mo><mi>s</mi><mo>×</mo><mi>ℓ</mi></mrow>
+          <mn>2</mn>
+        </mfrac>
+      </mrow>
+    </math>
+  </section>
+
+  <section>
+    <h3>4. Surface Area and “Regular Polyhedra”</h3>
+    <p>
+      Only five solids are truly regular polyhedra (the Platonic solids), and each has its own closed‑form surface area formula.
+    </p>
+
+    <ul>
+      <li>Tetrahedron (triangular faces)</li>
+      <li>Cube (square faces)</li>
+      <li>Octahedron (triangular faces)</li>
+      <li>Dodecahedron (pentagonal faces)</li>
+      <li>Icosahedron (triangular faces)</li>
+    </ul>
+
+    <p>
+      For general <strong>n</strong>, prisms and pyramids built from a regular n‑gon base are the most natural solids, and their surface areas always come from:
+    </p>
+
+    <p><strong>Surface Area = Base Area + Lateral Area</strong></p>
+  </section>
+</article>
+<article id="at-5">
+  <header>
+    <h2>Surface Area of the Platonic Solids</h2>
+    <p>Formulas for the surface area of all five Platonic solids in terms of edge length.</p>
+  </header>
+
+  <section>
+    <h3>1. What Are Platonic Solids?</h3>
+    <p>
+      A <strong>Platonic solid</strong> is a 3D shape where all faces are congruent regular polygons,
+      and the same number of faces meet at each vertex. There are exactly five:
+    </p>
+    <ul>
+      <li>Tetrahedron</li>
+      <li>Cube</li>
+      <li>Octahedron</li>
+      <li>Dodecahedron</li>
+      <li>Icosahedron</li>
+    </ul>
+    <p>Let the edge length of each solid be <strong>a</strong>.</p>
+  </section>
+
+  <section>
+    <h3>2. Tetrahedron</h3>
+    <p>
+      A regular tetrahedron has <strong>4</strong> equilateral triangle faces.
+    </p>
+    <p><strong>Surface Area:</strong></p>
+    <math display="block">
+      <mrow>
+        <mi>SA</mi><mo>=</mo>
+        <mn>4</mn>
+        <mo>×</mo>
+        <mfrac>
+          <mrow><msqrt><mn>3</mn></msqrt><mo>×</mo><msup><mi>a</mi><mn>2</mn></msup></mrow>
+          <mn>4</mn>
+        </mfrac>
+        <mo>=</mo>
+        <msqrt><mn>3</mn></msqrt><mo>×</mo><msup><mi>a</mi><mn>2</mn></msup>
+      </mrow>
+    </math>
+  </section>
+
+  <section>
+    <h3>3. Cube</h3>
+    <p>
+      A cube has <strong>6</strong> square faces.
+    </p>
+    <p><strong>Surface Area:</strong></p>
+    <math display="block">
+      <mrow>
+        <mi>SA</mi><mo>=</mo>
+        <mn>6</mn><mo>×</mo><msup><mi>a</mi><mn>2</mn></msup>
+      </mrow>
+    </math>
+  </section>
+
+  <section>
+    <h3>4. Octahedron</h3>
+    <p>
+      A regular octahedron has <strong>8</strong> equilateral triangle faces.
+    </p>
+    <p><strong>Surface Area:</strong></p>
+    <math display="block">
+      <mrow>
+        <mi>SA</mi><mo>=</mo>
+        <mn>8</mn>
+        <mo>×</mo>
+        <mfrac>
+          <mrow><msqrt><mn>3</mn></msqrt><mo>×</mo><msup><mi>a</mi><mn>2</mn></msup></mrow>
+          <mn>4</mn>
+        </mfrac>
+        <mo>=</mo>
+        <mn>2</mn><mo>×</mo><msqrt><mn>3</mn></msqrt><mo>×</mo><msup><mi>a</mi><mn>2</mn></msup>
+      </mrow>
+    </math>
+  </section>
+
+  <section>
+    <h3>5. Dodecahedron</h3>
+    <p>
+      A regular dodecahedron has <strong>12</strong> regular pentagon faces.
+    </p>
+    <p><strong>Surface Area:</strong></p>
+    <math display="block">
+      <mrow>
+        <mi>SA</mi><mo>=</mo>
+        <mn>3</mn>
+        <mo>×</mo>
+        <msqrt><mn>25</mn><mo>+</mo><mn>10</mn><mo>×</mo><msqrt><mn>5</mn></msqrt></mo></msqrt>
+        <mo>×</mo>
+        <msup><mi>a</mi><mn>2</mn></msup>
+      </mrow>
+    </math>
+  </section>
+
+  <section>
+    <h3>6. Icosahedron</h3>
+    <p>
+      A regular icosahedron has <strong>20</strong> equilateral triangle faces.
+    </p>
+    <p><strong>Surface Area:</strong></p>
+    <math display="block">
+      <mrow>
+        <mi>SA</mi><mo>=</mo>
+        <mn>20</mn>
+        <mo>×</mo>
+        <mfrac>
+          <mrow><msqrt><mn>3</mn></msqrt><mo>×</mo><msup><mi>a</mi><mn>2</mn></msup></mrow>
+          <mn>4</mn>
+        </mfrac>
+        <mo>=</mo>
+        <mn>5</mn><mo>×</mo><msqrt><mn>3</mn></msqrt><mo>×</mo><msup><mi>a</mi><mn>2</mn></msup>
+      </mrow>
+    </math>
+  </section>
+
+  <section>
+    <h3>7. Summary Table</h3>
+    <table>
+      <tr>
+        <th>Solid</th>
+        <th>Faces</th>
+        <th>Face Shape</th>
+        <th>Surface Area (edge length a)</th>
+      </tr>
+      <tr>
+        <td>Tetrahedron</td>
+        <td>4</td>
+        <td>Equilateral triangle</td>
+        <td>√3 · a²</td>
+      </tr>
+      <tr>
+        <td>Cube</td>
+        <td>6</td>
+        <td>Square</td>
+        <td>6a²</td>
+      </tr>
+      <tr>
+        <td>Octahedron</td>
+        <td>8</td>
+        <td>Equilateral triangle</td>
+        <td>2√3 · a²</td>
+      </tr>
+      <tr>
+        <td>Dodecahedron</td>
+        <td>12</td>
+        <td>Pentagon</td>
+        <td>3√(25 + 10√5) · a²</td>
+      </tr>
+      <tr>
+        <td>Icosahedron</td>
+        <td>20</td>
+        <td>Equilateral triangle</td>
+        <td>5√3 · a²</td>
+      </tr>
+    </table>
+  </section>
+</article>
+<article id="at-6">
+  <header>
+    <h2>Surface Area Cheat Sheet for Common Solids</h2>
+    <p>Quick formulas for the surface area of spheres, cylinders, cones, prisms, and more.</p>
+  </header>
+
+  <section>
+    <h3>1. Sphere</h3>
+    <p><strong>Surface Area:</strong></p>
+    <math display="block">
+      <mrow>
+        <mi>SA</mi><mo>=</mo>
+        <mn>4</mn><mo>π</mo><msup><mi>r</mi><mn>2</mn></msup>
+      </mrow>
+    </math>
+    <p>Where <strong>r</strong> is the radius.</p>
+  </section>
+
+  <section>
+    <h3>2. Cylinder</h3>
+    <p><strong>Surface Area:</strong></p>
+    <math display="block">
+      <mrow>
+        <mi>SA</mi><mo>=</mo>
+        <mn>2</mn><mo>π</mo><mi>r</mi><mo>(</mo><mi>r</mi><mo>+</mo><mi>h</mi><mo>)</mo>
+      </mrow>
+    </math>
+    <p>
+      This includes the top, bottom, and curved surface.  
+      <strong>r</strong> = radius, <strong>h</strong> = height.
+    </p>
+  </section>
+
+  <section>
+    <h3>3. Cone</h3>
+    <p><strong>Surface Area:</strong></p>
+    <math display="block">
+      <mrow>
+        <mi>SA</mi><mo>=</mo>
+        <mo>π</mo><mi>r</mi><mo>(</mo><mi>r</mi><mo>+</mo><mi>ℓ</mi><mo>)</mo>
+      </mrow>
+    </math>
+    <p>
+      <strong>ℓ</strong> is the slant height.  
+      Formula includes the circular base and the curved surface.
+    </p>
+  </section>
+
+  <section>
+    <h3>4. Rectangular Prism (Box)</h3>
+    <p><strong>Surface Area:</strong></p>
+    <math display="block">
+      <mrow>
+        <mi>SA</mi><mo>=</mo>
+        <mn>2</mn><mo>(</mo>
+        <mi>lw</mi><mo>+</mo>
+        <mi>lh</mi><mo>+</mo>
+        <mi>wh</mi>
+        <mo>)</mo>
+      </mrow>
+    </math>
+    <p>
+      Where <strong>l</strong> = length, <strong>w</strong> = width, <strong>h</strong> = height.
+    </p>
+  </section>
+
+  <section>
+    <h3>5. Triangular Prism</h3>
+    <p><strong>Surface Area:</strong></p>
+    <p>
+      <strong>SA = 2 × (area of triangle) + (perimeter of triangle × height of prism)</strong>
+    </p>
+    <p>
+      Works for any triangular base.
+    </p>
+  </section>
+
+  <section>
+    <h3>6. Pyramid (Any Base)</h3>
+    <p><strong>Surface Area:</strong></p>
+    <math display="block">
+      <mrow>
+        <mi>SA</mi><mo>=</mo>
+        <mi>Base</mi><mo>&nbsp;</mo><mi>Area</mi>
+        <mo>+</mo>
+        <mi>Lateral</mi><mo>&nbsp;</mo><mi>Area</mi>
+      </mrow>
+    </math>
+    <p>
+      Lateral area is the sum of the triangular faces.  
+      For a regular pyramid:
+    </p>
+
+    <math display="block">
+      <mrow>
+        <mi>Lateral</mi><mo>&nbsp;</mo><mi>Area</mi>
+        <mo>=</mo>
+        <mfrac>
+          <mrow><mi>P</mi><mo>×</mo><mi>ℓ</mi></mrow>
+          <mn>2</mn>
+        </mfrac>
+      </mrow>
+    </math>
+
+    <p>
+      <strong>P</strong> = perimeter of base, <strong>ℓ</strong> = slant height.
+    </p>
+  </section>
+
+  <section>
+    <h3>7. Cube (Special Case)</h3>
+    <p><strong>Surface Area:</strong></p>
+    <math display="block">
+      <mrow>
+        <mi>SA</mi><mo>=</mo>
+        <mn>6</mn><msup><mi>a</mi><mn>2</mn></msup>
+      </mrow>
+    </math>
+    <p>Where <strong>a</strong> is the edge length.</p>
+  </section>
+
+  <section>
+    <h3>8. Quick Reference Table</h3>
+    <table>
+      <tr>
+        <th>Solid</th>
+        <th>Surface Area Formula</th>
+      </tr>
+      <tr>
+        <td>Sphere</td>
+        <td>4πr²</td>
+      </tr>
+      <tr>
+        <td>Cylinder</td>
+        <td>2πr(r + h)</td>
+      </tr>
+      <tr>
+        <td>Cone</td>
+        <td>πr(r + ℓ)</td>
+      </tr>
+      <tr>
+        <td>Rectangular Prism</td>
+        <td>2(lw + lh + wh)</td>
+      </tr>
+      <tr>
+        <td>Cube</td>
+        <td>6a²</td>
+      </tr>
+      <tr>
+        <td>Triangular Prism</td>
+        <td>2A + Ph</td>
+      </tr>
+      <tr>
+        <td>Pyramid</td>
+        <td>Base Area + ½Pℓ</td>
+      </tr>
+    </table>
+  </section>
+</article>
+<article id="at-7">
+  <header>
+    <h2>How to Write an Essay</h2>
+    <p>A clear guide to the structure of a standard academic essay.</p>
+  </header>
+
+  <section>
+    <h3>1. Introduction Paragraph</h3>
+    <p>
+      The introduction sets the stage for your essay. It should grab the reader’s attention,
+      introduce the topic, and end with a strong thesis statement.
+    </p>
+
+    <ul>
+      <li><strong>Hook:</strong> An interesting fact, question, or statement.</li>
+      <li><strong>Background:</strong> Brief context the reader needs.</li>
+      <li><strong>Thesis Statement:</strong> Your main argument or claim.</li>
+    </ul>
+
+    <p><em>Example thesis:</em> “Regular exercise improves mental health, boosts energy, and strengthens the body.”</p>
+  </section>
+
+  <section>
+    <h3>2. Body Paragraphs</h3>
+    <p>
+      Each body paragraph should focus on one main idea that supports your thesis.
+      A typical essay has 2–4 body paragraphs.
+    </p>
+
+    <h4>Structure of a Body Paragraph</h4>
+    <ul>
+      <li><strong>Topic Sentence:</strong> Introduces the paragraph’s main idea.</li>
+      <li><strong>Evidence:</strong> Facts, quotes, examples, or data.</li>
+      <li><strong>Explanation:</strong> How the evidence supports your point.</li>
+      <li><strong>Closing Sentence:</strong> Wraps up the idea and transitions to the next paragraph.</li>
+    </ul>
+
+    <p><em>Tip:</em> Use transition words like “Furthermore,” “In addition,” or “However.”</p>
+  </section>
+
+  <section>
+    <h3>3. Conclusion Paragraph</h3>
+    <p>
+      The conclusion restates your thesis in a new way and summarizes your main points.
+      It should leave the reader with a final thought.
+    </p>
+
+    <ul>
+      <li><strong>Restate the Thesis:</strong> Say it differently, not word-for-word.</li>
+      <li><strong>Summarize Key Points:</strong> Briefly revisit your main ideas.</li>
+      <li><strong>Final Insight:</strong> A closing thought, call to action, or reflection.</li>
+    </ul>
+
+    <p><em>Example final insight:</em> “By making small daily choices, anyone can build a healthier lifestyle.”</p>
+  </section>
+
+  <section>
+    <h3>4. Essay Structure Overview</h3>
+    <table>
+      <tr>
+        <th>Section</th>
+        <th>Purpose</th>
+        <th>Key Elements</th>
+      </tr>
+      <tr>
+        <td>Introduction</td>
+        <td>Introduce topic and thesis</td>
+        <td>Hook, background, thesis</td>
+      </tr>
+      <tr>
+        <td>Body Paragraph 1</td>
+        <td>Main supporting idea</td>
+        <td>Topic sentence, evidence, explanation</td>
+      </tr>
+      <tr>
+        <td>Body Paragraph 2</td>
+        <td>Second supporting idea</td>
+        <td>Topic sentence, evidence, explanation</td>
+      </tr>
+      <tr>
+        <td>Body Paragraph 3</td>
+        <td>Optional third idea</td>
+        <td>Topic sentence, evidence, explanation</td>
+      </tr>
+      <tr>
+        <td>Conclusion</td>
+        <td>Wrap up and reflect</td>
+        <td>Restated thesis, summary, final insight</td>
+      </tr>
+    </table>
+  </section>
+
+  <section>
+    <h3>5. Quick Tips for Strong Essays</h3>
+    <ul>
+      <li>Stay on topic — every sentence should support your thesis.</li>
+      <li>Use formal, clear language.</li>
+      <li>Vary sentence structure to keep writing interesting.</li>
+      <li>Proofread for grammar, punctuation, and clarity.</li>
+      <li>Use transitions to connect ideas smoothly.</li>
+    </ul>
+  </section>
+</article>
+<article id="at-8">
+  <header>
+    <h2>Persuasive Essay Format</h2>
+    <p>A guide to writing a clear, convincing persuasive essay.</p>
+  </header>
+
+  <section>
+    <h3>1. Introduction</h3>
+    <p>
+      The introduction sets up your argument and prepares the reader for your position.
+      A strong persuasive introduction includes:
+    </p>
+
+    <ul>
+      <li><strong>Hook:</strong> A surprising fact, bold statement, or question.</li>
+      <li><strong>Background:</strong> Brief context about the issue.</li>
+      <li><strong>Claim (Thesis):</strong> Your clear position on the topic.</li>
+    </ul>
+
+    <p><em>Example claim:</em> “Schools should start later in the morning to improve student health and performance.”</p>
+  </section>
+
+  <section>
+    <h3>2. Body Paragraphs</h3>
+    <p>
+      Each body paragraph should support your claim with strong reasoning and evidence.
+      Most persuasive essays include 2–4 body paragraphs.
+    </p>
+
+    <h4>Structure of a Persuasive Body Paragraph</h4>
+    <ul>
+      <li><strong>Reason:</strong> A main point that supports your claim.</li>
+      <li><strong>Evidence:</strong> Facts, statistics, examples, or expert opinions.</li>
+      <li><strong>Explanation:</strong> How the evidence proves your point.</li>
+      <li><strong>Counterargument (optional):</strong> Acknowledge the other side.</li>
+      <li><strong>Rebuttal:</strong> Explain why your side is stronger.</li>
+    </ul>
+
+    <p><em>Tip:</em> Persuasive writing is strongest when you show you understand both sides.</p>
+  </section>
+
+  <section>
+    <h3>3. Conclusion</h3>
+    <p>
+      The conclusion reinforces your argument and leaves the reader thinking.
+      A persuasive conclusion should:
+    </p>
+
+    <ul>
+      <li><strong>Restate your claim</strong> in a fresh way.</li>
+      <li><strong>Summarize your strongest reasons.</strong></li>
+      <li><strong>Call to action:</strong> Tell the reader what should happen next.</li>
+    </ul>
+
+    <p><em>Example call to action:</em> “If schools want healthier, more focused students, they must adopt later start times.”</p>
+  </section>
+
+  <section>
+    <h3>4. Persuasive Essay Structure Overview</h3>
+    <table>
+      <tr>
+        <th>Section</th>
+        <th>Purpose</th>
+        <th>Key Elements</th>
+      </tr>
+      <tr>
+        <td>Introduction</td>
+        <td>Present the issue and your position</td>
+        <td>Hook, background, claim</td>
+      </tr>
+      <tr>
+        <td>Body Paragraph 1</td>
+        <td>Main supporting reason</td>
+        <td>Reason, evidence, explanation</td>
+      </tr>
+      <tr>
+        <td>Body Paragraph 2</td>
+        <td>Second supporting reason</td>
+        <td>Reason, evidence, explanation</td>
+      </tr>
+      <tr>
+        <td>Body Paragraph 3</td>
+        <td>Counterargument + rebuttal</td>
+        <td>Opposing view, rebuttal</td>
+      </tr>
+      <tr>
+        <td>Conclusion</td>
+        <td>Reinforce your argument</td>
+        <td>Restated claim, summary, call to action</td>
+      </tr>
+    </table>
+  </section>
+
+  <section>
+    <h3>5. Quick Tips for Persuasive Writing</h3>
+    <ul>
+      <li>Use strong, confident language.</li>
+      <li>Choose evidence that is specific and credible.</li>
+      <li>Avoid emotional exaggeration—logic is more convincing.</li>
+      <li>Address the other side to strengthen your argument.</li>
+      <li>End with a powerful final message.</li>
+    </ul>
+  </section>
+</article>
+
+</main>
+
+<script>
+const renderDoughnut = () => {
+    const group = document.getElementById('segment-group');
+    const legend = document.getElementById('chart-legend');
+    const totalEl = document.getElementById('total-value');
+
+    const data = [
+        { label: 'Church', value: Number(document.getElementById('church').value), color: '#4361ee' },
+        { label: 'Save', value: Number(document.getElementById('save').value), color: '#4cc9f0' },
+        { label: 'Spend', value: Number(document.getElementById('spend').value), color: '#7209b7' },
+        { label: 'Bank', value: Number(document.getElementById('bank').value), color: '#f72585' }
+    ];
+
+    const total = data.reduce((sum, item) => sum + item.value, 0);
+    totalEl.textContent = total;
+
+    group.innerHTML = '';
+    legend.innerHTML = '';
+
+    let offset = 0;
+
+    data.forEach(item => {
+        if (total === 0 || item.value <= 0) return;
+
+        const percentage = (item.value / total) * 100;
+
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("class", "donut-segment");
+        circle.setAttribute("cx", "20");
+        circle.setAttribute("cy", "20");
+        circle.setAttribute("r", "15.915");
+        circle.setAttribute("stroke", item.color);
+        circle.setAttribute("stroke-dasharray", `${percentage} ${100 - percentage}`);
+        circle.setAttribute("stroke-dashoffset", -offset);
+
+        group.appendChild(circle);
+
+        const div = document.createElement('div');
+        div.className = 'legend-item';
+        div.innerHTML = `
+            <div class="legend-color" style="background: ${item.color}"></div>
+            <span><strong>${Math.round(percentage)}%</strong> ${item.label}</span>
+        `;
+        legend.appendChild(div);
+
+        offset += percentage;
+    });
+};
+
+document.getElementById('input-group').addEventListener('input', renderDoughnut);
+renderDoughnut();
+
+const recentList = document.getElementById('recent');
+if (recentList) {
+    const newItem = document.createElement('li');
+    newItem.textContent = 'Water';
+    recentList.appendChild(newItem);
+}
+
+function generateTableFromInput() {
+    const size = Number(document.getElementById('table-size').value);
+    generateMultiplicationTable(size);
+}
+
+function generateMultiplicationTable(size) {
+    const container = document.getElementById('table-container');
+    container.innerHTML = ""; // Clear previous table
+
+    const table = document.createElement('table');
+
+    const headerRow = document.createElement('tr');
+    headerRow.innerHTML = '<th>×</th>';
+
+    for (let i = 1; i <= size; i++) {
+        const th = document.createElement('th');
+        th.textContent = i;
+        headerRow.appendChild(th);
+    }
+    table.appendChild(headerRow);
+
+    for (let i = 1; i <= size; i++) {
+        const row = document.createElement('tr');
+
+        const rowHeader = document.createElement('th');
+        rowHeader.textContent = i;
+        row.appendChild(rowHeader);
+
+        for (let j = 1; j <= size; j++) {
+            const cell = document.createElement('td');
+            cell.textContent = i * j;
+            row.appendChild(cell);
+        }
+
+        table.appendChild(row);
+    }
+
+    container.appendChild(table);
+}
+function enableColumnHover(table) {
+    const rows = table.rows;
+
+    for (let r = 0; r < rows.length; r++) {
+        for (let c = 0; c < rows[r].cells.length; c++) {
+            const cell = rows[r].cells[c];
+
+            cell.addEventListener("mouseenter", () => {
+                for (let rr = 0; rr < rows.length; rr++) {
+                    rows[rr].cells[c].style.background = "#ffeaa7";
+                }
+            });
+
+            cell.addEventListener("mouseleave", () => {
+                for (let rr = 0; rr < rows.length; rr++) {
+                    rows[rr].cells[c].style.background = "";
+                }
+            });
+        }
+    }
+}
+
+</script>
+
+</body>
+</html>
