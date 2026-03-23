@@ -7,7 +7,7 @@ This is my portfolio for getting into college. It includes original music, inter
 - Music files in **.pdf** and **.mp3** formats, each made with MuseScore 4.6.2  
 - Multiple **HTML pages** to view in your browser  
 - Example screenshot:  
-  ![Screenshot](images/demo.png)
+  ![Demo 1](images/demo.png)
 
 ## How to Run
 
