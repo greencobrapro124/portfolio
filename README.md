@@ -34,3 +34,7 @@ This is my portfolio for getting into college. It includes original music, inter
 ├── images/
 └── README.md
 ```
+
+## Scratch Projects
+
+- [Meteor Shower!](https://scratch.mit.edu/projects/1306960035/): 
