@@ -38,4 +38,4 @@ This is my portfolio for getting into college. It includes original music, inter
 ## Scratch Projects
 
 - [Meteor Shower!](https://scratch.mit.edu/projects/1306960035/): Dodge meteors while going through space!
---
+  -- Made in 6th grade
